@@ -14,7 +14,7 @@ std::string lower(std::string str){
     return str;
 }
 
-void modifyBits(int& n, const int& pos, const int& change){
+void changeBits(int& n, const int& pos, const int& change){
     int mask = 0b11 << pos;
     int temp = ((n & ~mask) | (change << pos));
     n &= temp;
@@ -63,22 +63,27 @@ int main(int argc, char** argv) {
         std::stringstream parser(lines[i]);
         binary = 255;
         parser >> word;
-        if(word == "add") {
-            modifyBits(binary, 6, 0);
-            parser >> Rd;
-            parser >> Rn;
-            parser >> Rm;
-            modifyBits(binary, 4, registers[Rn]);
-            modifyBits(binary, 2, registers[Rm]);
-            modifyBits(binary, 0, registers[Rd]);
-        } else if (word == "and") {
-            modifyBits(binary, 6, 1);
-            parser >> Rd;
-            parser >> Rn;
-            parser >> Rm;
-            modifyBits(binary, 4, registers[Rn]);
-            modifyBits(binary, 2, registers[Rm]);
-            modifyBits(binary, 0, registers[Rd]);
+        parser >> Rd;
+        parser >> Rn;
+        parser >> Rm;
+        if(word == "add"){
+            changeBits(binary, 6, 0);
+            changeBits(binary, 4, registers[Rn]);
+            changeBits(binary, 2, registers[Rm]);
+            changeBits(binary, 0, registers[Rd]);
+        } else if (word == "and"){
+            changeBits(binary, 6, 1);
+            changeBits(binary, 4, registers[Rn]);
+            changeBits(binary, 2, registers[Rm]);
+            changeBits(binary, 0, registers[Rd]);
+        } else if (word == "not"){
+            changeBits(binary, 6, 2);
+            changeBits(binary, 4, registers[Rn]);
+            changeBits(binary, 2, 00);
+            changeBits(binary, 0, registers[Rd]);
+        } else if (word == "bnz") {
+            binary = 0;
+            changeBits(binary, 6, 3);
         }
     }
     std::ostringstream oss;
@@ -86,4 +91,3 @@ int main(int argc, char** argv) {
     std::cout << oss.str();
     return 0;
 }
-
