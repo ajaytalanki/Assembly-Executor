@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <unordered_map>
+#include <map>
 #include <unordered_set>
 #include <vector>
 #include <iomanip>
@@ -9,14 +9,14 @@
 //MUST CHECK FOR INVALID INSTRUCTIONS IN PASS 1
 
 std::string lower(std::string str){
-    for(int i = 0; i < str.length(); i++)
-        str[i] = tolower(str[i]);
+    for(char& c : str)
+        c = tolower(c);
     return str;
 }
 
 std::string upper(std::string str){
-    for(int i = 0; i < str.length(); i++)
-        str[i] = toupper(str[i]);
+    for(char& c : str)
+        c = toupper(c);
     return str;
 }
 
@@ -40,6 +40,11 @@ void parse(std::string& str, const std::unordered_set<std::string>& instructions
         str = str.substr(0, index);
 }
 
+void registerCheck(const std::string& reg, const std::unordered_map<std::string, int>& registers){
+    if(registers.find(reg) == registers.end())
+        std::cout << reg << " is not a valid register." << std::endl;
+}
+
 int main(int argc, char** argv) {
     //PASS 1
     std::ifstream file;
@@ -52,7 +57,7 @@ int main(int argc, char** argv) {
         std::cout << "Usage: fiscas <asm file> <hex file> [-l]" << std::endl;
     std::string line, word;
     int address = 0;
-    std::unordered_map<std::string, int> symbol_table;
+    std::map<std::string, int> symbolTable;
     std::unordered_set<std::string> instructions{"not", "and", "add", "bnz"};
     std::unordered_map<std::string, int> registers{{"r0", 0}, {"r1", 1}, {"r2", 2}, {"r3", 3}};
     std::vector<std::string> lines;
@@ -61,10 +66,10 @@ int main(int argc, char** argv) {
         std::stringstream parser(line);
         parser >> word;
         if(word.back() == ':'){ // label definition
-            if(symbol_table.find(word) != symbol_table.end()) // label is already defined
+            if(symbolTable.find(word) != symbolTable.end()) // label is already defined
                 std::cout <<  "Label " << word << "is already defined." << std::endl;
             else {
-                symbol_table.insert(std::make_pair(word.substr(0, word.size() - 1), address));
+                symbolTable.insert(std::make_pair(word.substr(0, word.size() - 1), address));
                 if((parser >> word) and instructions.find(word) != instructions.end()) {  // there is an instruction
                     lines.emplace_back(line);
                     address++;
@@ -90,6 +95,9 @@ int main(int argc, char** argv) {
         parser >> Rd;
         parser >> Rn;
         parser >> Rm;
+        registerCheck(Rd, registers); // checks for valid registers
+        registerCheck(Rn, registers);
+        registerCheck(Rm, registers);
         if(word == "add"){
             changeBits(binary, 6, 0);
             changeBits(binary, 4, registers[Rn]);
@@ -106,8 +114,8 @@ int main(int argc, char** argv) {
             changeBits(binary, 2, 00);
             changeBits(binary, 0, registers[Rd]);
         } else if (word == "bnz") {
-            if(symbol_table.find(Rd) != symbol_table.end()) {
-                binary = symbol_table[Rd];
+            if(symbolTable.find(Rd) != symbolTable.end()) {
+                binary = symbolTable[Rd];
                 binary |= (3 << 6);
             } else
                 std::cout <<  "Label " << Rd << " is not in the symbol table." << std::endl;
