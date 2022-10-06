@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <cctype>
+#include <iomanip>
 
 //MUST CHECK FOR INVALID INSTRUCTIONS IN PASS 1
 
@@ -14,39 +14,61 @@ std::string lower(std::string str){
     return str;
 }
 
+std::string upper(std::string str){
+    for(int i = 0; i < str.length(); i++)
+        str[i] = toupper(str[i]);
+    return str;
+}
+
 void changeBits(int& n, const int& pos, const int& change){
     int mask = 0b11 << pos;
     int temp = ((n & ~mask) | (change << pos));
     n &= temp;
 }
 
+void parse(std::string& str, const std::unordered_set<std::string>& instructions){
+    std::stringstream parser(str);
+    std::string word;
+    while(parser >> word){
+        if(instructions.find(word) != instructions.end())
+            break;
+    }
+    auto index = str.find(word);
+    str = str.substr(index, str.size() - index);
+    index = str.find(';');
+    if(index != std::string::npos)
+        str = str.substr(0, index);
+}
+
 int main(int argc, char** argv) {
     //PASS 1
     std::ifstream file;
-    std::string line;
-    std::string word;
+    file.open(argv[1]);
+    if(!file.is_open()) {
+        std::cout << "File did not open." << std::endl;
+        exit(0);
+    }
+    if(argc < 3)
+        std::cout << "Usage: fiscas <asm file> <hex file> [-l]" << std::endl;
+    std::string line, word;
     int address = 0;
     std::unordered_map<std::string, int> symbol_table;
     std::unordered_set<std::string> instructions{"not", "and", "add", "bnz"};
     std::unordered_map<std::string, int> registers{{"r0", 0}, {"r1", 1}, {"r2", 2}, {"r3", 3}};
     std::vector<std::string> lines;
-    file.open(argv[1]);
-    if(!file.is_open())
-        std::cout << "File did not open." << std::endl;
     while(std::getline(file, line)){
         line = lower(line);
         std::stringstream parser(line);
         parser >> word;
         if(word.back() == ':'){ // label definition
             if(symbol_table.find(word) != symbol_table.end()) // label is already defined
-                std::cout <<  "Label " << word << "on line " << address << "is already defined." << std::endl;
+                std::cout <<  "Label " << word << "is already defined." << std::endl;
             else {
                 symbol_table.insert(std::make_pair(word.substr(0, word.size() - 1), address));
                 if((parser >> word) and instructions.find(word) != instructions.end()) {  // there is an instruction
                     lines.emplace_back(line);
                     address++;
                 }
-
             }
         } else if(instructions.find(word) != instructions.end()){
             lines.emplace_back(line);
@@ -55,11 +77,13 @@ int main(int argc, char** argv) {
     }
 
     //PASS 2
-    // ADD Rd Rn Rm : Rd = Rn + Rm
-    // Op Rn Rm Rd
+    std::ofstream out;
+    out.open("fiscas.h");
+    out << "v2.0 raw" << std::endl;
     int binary = 255;
     std::string Rd, Rm, Rn;
     for(int i = 0; i < lines.size(); i++){
+        parse(lines[i], instructions);
         std::stringstream parser(lines[i]);
         binary = 255;
         parser >> word;
@@ -82,12 +106,17 @@ int main(int argc, char** argv) {
             changeBits(binary, 2, 00);
             changeBits(binary, 0, registers[Rd]);
         } else if (word == "bnz") {
-            binary = 0;
-            changeBits(binary, 6, 3);
+            if(symbol_table.find(Rd) != symbol_table.end()) {
+                binary = symbol_table[Rd];
+                binary |= (3 << 6);
+            } else
+                std::cout <<  "Label " << Rd << " is not in the symbol table." << std::endl;
         }
+        std::ostringstream oss;
+        oss << std::hex << std::setw(2) << std::setfill('0') << binary;
+        out << upper(oss.str()) << std::endl;
     }
-    std::ostringstream oss;
-    oss << std::hex << binary;
-    std::cout << oss.str();
+    out.close();
+    file.close();
     return 0;
 }
