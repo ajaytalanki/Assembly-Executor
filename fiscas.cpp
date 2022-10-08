@@ -49,12 +49,10 @@ int main(int argc, char** argv) {
     //PASS 1
     std::ifstream file;
     file.open(argv[1]);
-    if(!file.is_open()) {
-        std::cout << "File did not open." << std::endl;
+    if(!file.is_open() or argc < 3) {
+        std::cout << "Usage: fiscas <asm file> <hex file> [-l]" << std::endl;
         exit(0);
     }
-    if(argc < 3)
-        std::cout << "Usage: fiscas <asm file> <hex file> [-l]" << std::endl;
     std::string line, word;
     int address = 0;
     std::map<std::string, int> symbolTable;
@@ -96,15 +94,15 @@ int main(int argc, char** argv) {
         std::stringstream parser(assembly[i]);
         binary = 255;
         parser >> word;
-        if(instructions.find(word) == instructions.end()) //
+        if(instructions.find(word) == instructions.end())
             std::cout << word << " is an invalid instruction" << std::endl;
         if (word == "bnz") {
             parser >> target;
-            if(symbolTable.find(target) != symbolTable.end()) {
+            if(symbolTable.find(target) != symbolTable.end()) { // label is defined
                 binary = symbolTable[target];
                 binary |= (3 << 6);
             } else
-                std::cout <<  "Label " << target << " is undefined." << std::endl;
+                std::cout << "Label " << target << " is undefined." << std::endl;
             goto end;
         }
         parser >> Rd;
