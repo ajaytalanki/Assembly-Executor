@@ -8,13 +8,13 @@
 
 std::string lower(std::string str){
     for(char& c : str)
-        c = tolower(c);
+        c = (char)tolower(c);
     return str;
 }
 
 std::string upper(std::string str){
     for(char& c : str)
-        c = toupper(c);
+        c = (char)toupper(c);
     return str;
 }
 
@@ -27,14 +27,14 @@ void changeBits(int& n, const int& pos, const int& change){
 void parse(std::string& str, const std::unordered_set<std::string>& instructions){
     std::stringstream parser(str);
     std::string word;
-    while(parser >> word){
+    while(parser >> word){ // find location of instruction word
         if(instructions.find(word) != instructions.end())
             break;
     }
     auto index = str.find(word);
-    str = str.substr(index, str.size() - index);
+    str = str.substr(index, str.size() - index); // trimming string until instruction word
     index = str.find(';');
-    if(index != std::string::npos)
+    if(index != std::string::npos) // deleting comments
         str = str.substr(0, index);
 }
 
@@ -60,11 +60,9 @@ int main(int argc, char** argv) {
     std::map<std::string, int> symbolTable;
     std::unordered_set<std::string> instructions{"not", "and", "add", "bnz"};
     std::unordered_map<std::string, int> registers{{"r0", 0}, {"r1", 1}, {"r2", 2}, {"r3", 3}};
-    std::vector<std::string> assembly;
-    std::vector<std::string> hex;
-    std::vector<std::pair<std::string, int>> orderedSymbolTable;
+    std::vector<std::string> assembly, hex;
     while(std::getline(file, line)){
-        line = lower(line);
+        line = lower(line); // makes assembler case sensitive
         std::stringstream parser(line);
         parser >> word;
         if(word.back() == ':'){ // label definition
@@ -72,15 +70,18 @@ int main(int argc, char** argv) {
                 std::cout <<  "Label " << word << "is already defined." << std::endl;
             else {
                 symbolTable.insert(std::make_pair(word.substr(0, word.size() - 1), address));
-                orderedSymbolTable.emplace_back(std::make_pair(word.substr(0, word.size() - 1), address));
                 if((parser >> word) and instructions.find(word) != instructions.end()) {  // there is an instruction
                     assembly.emplace_back(line);
                     address++;
                 }
             }
-        } else if(instructions.find(word) != instructions.end()){
+        } else if(instructions.find(word) != instructions.end()){ // line starts with instruction
             assembly.emplace_back(line);
             address++;
+        }
+        if(address >= 64) {
+            std::cout << "Assembler is constrained to addresses 0-63, any code after won't be processed." << std::endl;
+            break;
         }
     }
 
@@ -91,11 +92,11 @@ int main(int argc, char** argv) {
     int binary = 255;
     std::string Rd, Rm, Rn, target;
     for(int i = 0; i < assembly.size(); i++){
-        parse(assembly[i], instructions);
+        parse(assembly[i], instructions); // gets rid of label definitions and comments
         std::stringstream parser(assembly[i]);
         binary = 255;
         parser >> word;
-        if(instructions.find(word) == instructions.end())
+        if(instructions.find(word) == instructions.end()) //
             std::cout << word << " is an invalid instruction" << std::endl;
         if (word == "bnz") {
             parser >> target;
@@ -136,10 +137,10 @@ int main(int argc, char** argv) {
         hex.emplace_back(hexCode);
     }
     std::string argv3 = argv[3];
-    if(argc > 3 and argv3 == "-l"){ // -l flag
+    if(argc > 3 and argv3 == "-l"){ // listing output when user compiles with -l flag
         std::cout << "*** LABEL LIST ***" << std::endl;
-        for(int i = 0; i < orderedSymbolTable.size(); i++)
-            std::cout << orderedSymbolTable[i].first << "   " << std::setw(2) << std::setfill('0') << orderedSymbolTable[i].second << std::endl;
+        for(const auto& pair : symbolTable)
+            std::cout << pair.first << "   " << std::setw(2) << std::setfill('0') << pair.second << std::endl;
         std::cout << "*** MACHINE PROGRAM ***" << std::endl;
         for(int i = 0; i < hex.size(); i++){
             std::cout << std::setw(2) << std::setfill('0') << i;
@@ -148,4 +149,3 @@ int main(int argc, char** argv) {
     }
     return 0;
 }
-
