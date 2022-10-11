@@ -25,8 +25,33 @@ std::string upper(std::string str){
 
 std::string format(const u_int8_t& num){
   std::ostringstream oss;
-  oss << std::setw(2) << std::setfill('0') << std::hex << num;
+  oss << std::setw(2) << std::setfill('0') << std::hex << (unsigned)num;
   return upper(oss.str());
+}
+
+bool isNumber(const std::string& str){
+  return str.find_first_not_of("0123456789") == std::string::npos;
+}
+
+void checkCommandLineArguments(int argc, char** argv, bool& d, bool& cycles){
+  if(argc == 3){
+    std::string argv2 = argv[2];
+    if(argv2 == "-d")
+      d = true;
+    if(isNumber(argv2))
+      cycles = true;
+  } else if(argc == 4) {
+    std::string argv2 = argv[2];
+    std::string argv3 = argv[3];
+    if(argv2 == "-d")
+      d = true;
+    if(isNumber(argv2))
+      cycles = true;
+    if(argv3 == "-d")
+      d = true;
+    if(isNumber(argv3))
+      cycles = true;
+  }
 }
 
 void disassembly(const u_int8_t& instruction){
@@ -51,10 +76,11 @@ void disassembly(const u_int8_t& instruction){
 int main(int argc, char** argv) {
   std::ifstream file;
   std::string line;
+  bool Z, d, cycles;
+  checkCommandLineArguments(argc, argv, d, cycles);
   std::vector<u_int8_t> IM(64);
   std::vector<u_int8_t> registers(4, 0);
   u_int8_t binary = 0, opCode = 0, Rd = 0, Rm = 0, Rn = 0, target = 0;
-  bool Z = false;
   file.open(argv[1]);
   if(!file.is_open()) {
     std::cout << "File did not open." << std::endl;
@@ -95,12 +121,13 @@ int main(int argc, char** argv) {
         continue;
       }
     }
-    std::cout << "Cycle: " << cycle << " State:PC:" << std::hex <<
-    format(i) << " Z:" << std::boolalpha << Z
+    std::cout << "Cycle:" << cycle << " State:PC:" << std::hex <<
+    format(i + 1) << " Z:" << Z
     << " R0: " << format(registers[0]) << " R1: "<<
     format(registers[1]) << " R2: " << format(registers[2]) << " R3: "
     << format(registers[3]) << std::endl;
-    disassembly(IM[i]);
+    if(d)
+      disassembly(IM[i]);
     cycle++;
     i++;
   }
