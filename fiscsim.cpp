@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <iomanip>
 
 int hexToDecimal(const std::string& hex) {
   double sum = 0;
@@ -14,6 +15,18 @@ int hexToDecimal(const std::string& hex) {
     sum += (digit * pow(16, (double)hex.size() - i));
   }
   return static_cast<int>(sum);
+}
+
+std::string upper(std::string str){
+  for(char& c : str)
+    c = (char)toupper(c);
+  return str;
+}
+
+std::string format(const u_int8_t& num){
+  std::ostringstream oss;
+  oss << std::setw(2) << std::setfill('0') << std::hex << num;
+  return upper(oss.str());
 }
 
 void disassembly(const u_int8_t& instruction){
@@ -76,13 +89,17 @@ int main(int argc, char** argv) {
       Z = (~registers[Rn]) == 0;
     } else if(opCode == 3){ //BNZ
       if(Z) {
-          target = IM[i] & 0b00111111;
-          i = target;
-          cycle++;
-          continue;
-        }
+        target = IM[i] & 0b00111111;
+        i = target;
+        cycle++;
+        continue;
+      }
     }
-    std::cout << "Cycle: " << cycle << " State:PC:" << i << std::endl;
+    std::cout << "Cycle: " << cycle << " State:PC:" << std::hex <<
+    format(i) << " Z:" << std::boolalpha << Z
+    << " R0: " << format(registers[0]) << " R1: "<<
+    format(registers[1]) << " R2: " << format(registers[2]) << " R3: "
+    << format(registers[3]) << std::endl;
     disassembly(IM[i]);
     cycle++;
     i++;
