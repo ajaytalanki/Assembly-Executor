@@ -33,24 +33,31 @@ bool isNumber(const std::string& str){
   return str.find_first_not_of("0123456789") == std::string::npos;
 }
 
-void checkCommandLineArguments(int argc, char** argv, bool& d, bool& cycles){
+void checkCommandLineArguments(int argc, char** argv, bool& d, bool& cycles,
+        int& cycleArg){
   if(argc == 3){
     std::string argv2 = argv[2];
     if(argv2 == "-d")
       d = true;
-    if(isNumber(argv2))
+    if(isNumber(argv2)){
       cycles = true;
+      cycleArg = 2;
+    }
   } else if(argc == 4) {
     std::string argv2 = argv[2];
     std::string argv3 = argv[3];
     if(argv2 == "-d")
       d = true;
-    if(isNumber(argv2))
+    if(isNumber(argv2)){
       cycles = true;
+      cycleArg = 2;
+    }
     if(argv3 == "-d")
       d = true;
-    if(isNumber(argv3))
+    if(isNumber(argv3)){
       cycles = true;
+      cycleArg = 3;
+    }
   }
 }
 
@@ -77,7 +84,8 @@ int main(int argc, char** argv) {
   std::ifstream file;
   std::string line;
   bool Z, d, cycles;
-  checkCommandLineArguments(argc, argv, d, cycles);
+  int cycleArg = 0;
+  checkCommandLineArguments(argc, argv, d, cycles, cycleArg);
   std::vector<u_int8_t> IM(64);
   std::vector<u_int8_t> registers(4, 0);
   u_int8_t binary = 0, opCode = 0, Rd = 0, Rm = 0, Rn = 0, target = 0;
@@ -92,7 +100,7 @@ int main(int argc, char** argv) {
                    "The first line must read v2.0 raw" << std::endl;
     exit(0);
   }
-  int i = 0, cycle = 1;
+  int i = 0, cycle = 0;
   while(std::getline(file, line)){
     binary = hexToDecimal(line);
     IM[i] = binary;
@@ -100,6 +108,11 @@ int main(int argc, char** argv) {
   }
   i = 0;
   while(i < IM.size()){
+    if(cycles){
+      if(std::to_string(cycle) == argv[cycleArg])
+        break;
+    } else if(cycle == 20)
+        break;
     opCode = (IM[i] >> 6) & 0b00000011;
     Rn = (IM[i] >> 4) & 0b00000011;
     Rm = (IM[i] >> 2) & 0b00000011;
@@ -114,22 +127,22 @@ int main(int argc, char** argv) {
       registers[Rd] = ~registers[Rn];
       Z = (~registers[Rn]) == 0;
     } else if(opCode == 3){ //BNZ
-      if(Z) {
+      if(!Z) {
         target = IM[i] & 0b00111111;
         i = target;
-        cycle++;
-        continue;
       }
     }
-    std::cout << "Cycle:" << cycle << " State:PC:" << std::hex <<
-    format(i + 1) << " Z:" << Z
-    << " R0: " << format(registers[0]) << " R1: "<<
+    cycle++;
+    if(opCode != 3 or Z)
+      i++;
+    std::cout << "Cycle:" << cycle << " State:PC:" << format(i) <<
+    " Z:" << Z << " R0: " << format(registers[0]) << " R1: "<<
     format(registers[1]) << " R2: " << format(registers[2]) << " R3: "
     << format(registers[3]) << std::endl;
-    if(d)
+    if(d){
       disassembly(IM[i]);
-    cycle++;
-    i++;
+      std::cout << std::endl;
+    }
   }
   return 0;
 }
