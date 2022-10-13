@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include <iomanip>
+#include <cstring>
 
 int hexToDecimal(const std::string& hex) {
   double sum = 0;
@@ -36,25 +37,22 @@ bool isNumber(const std::string& str){
 void checkCommandLineArguments(int argc, char** argv, bool& d, bool& cycles,
         int& cycleArg){
   if(argc == 3){
-    std::string argv2 = argv[2];
-    if(argv2 == "-d")
+    if(strcmp(argv[2], "-d") == 0)
       d = true;
-    if(isNumber(argv2)){
+    if(isNumber(argv[2])){
       cycles = true;
       cycleArg = 2;
     }
   } else if(argc == 4) {
-    std::string argv2 = argv[2];
-    std::string argv3 = argv[3];
-    if(argv2 == "-d")
+    if(strcmp(argv[2], "-d") == 0)
       d = true;
-    if(isNumber(argv2)){
+    if(isNumber(argv[2])){
       cycles = true;
       cycleArg = 2;
     }
-    if(argv3 == "-d")
+    if(strcmp(argv[3], "-d") == 0)
       d = true;
-    if(isNumber(argv3)){
+    if(isNumber(argv[3])){
       cycles = true;
       cycleArg = 3;
     }
@@ -84,10 +82,10 @@ int main(int argc, char** argv) {
   std::ifstream file;
   std::string line;
   bool Z, d, cycles;
-  int cycleArg = 0;
+  int cycleArg = 0, i = 0, cycle = 0, iBeforeBranch;
   checkCommandLineArguments(argc, argv, d, cycles, cycleArg);
   std::vector<u_int8_t> IM(64);
-  std::vector<u_int8_t> registers(4, 0);
+  std::vector<u_int8_t> registers(4);
   u_int8_t binary = 0, opCode = 0, Rd = 0, Rm = 0, Rn = 0, target = 0;
   file.open(argv[1]);
   if(!file.is_open()) {
@@ -100,7 +98,6 @@ int main(int argc, char** argv) {
                    "The first line must read v2.0 raw" << std::endl;
     exit(0);
   }
-  int i = 0, cycle = 0;
   while(std::getline(file, line)){
     binary = hexToDecimal(line);
     IM[i] = binary;
@@ -129,18 +126,22 @@ int main(int argc, char** argv) {
     } else if(opCode == 3){ //BNZ
       if(!Z) {
         target = IM[i] & 0b00111111;
+        iBeforeBranch = i;
         i = target;
       }
     }
     cycle++;
-    if(opCode != 3 or Z)
+    if(opCode != 3 or Z) // not a branch
       i++;
     std::cout << "Cycle:" << cycle << " State:PC:" << format(i) <<
     " Z:" << Z << " R0: " << format(registers[0]) << " R1: "<<
     format(registers[1]) << " R2: " << format(registers[2]) << " R3: "
     << format(registers[3]) << std::endl;
     if(d){
-      disassembly(IM[i]);
+      if(opCode == 3 and !Z)
+        disassembly(IM[iBeforeBranch]);
+      else
+        disassembly(IM[i - 1]);
       std::cout << std::endl;
     }
   }
