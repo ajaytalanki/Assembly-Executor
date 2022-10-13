@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <vector>
 #include <iomanip>
+#include <cstring>
 
 std::string lower(std::string str){
   for(char& c : str)
@@ -38,7 +39,7 @@ void parse(std::string& s,const std::unordered_set<std::string>& instructions){
     s = s.substr(0, index);
 }
 
-void registerCheck(const std::string& reg, const std::unordered_map<std::string, 
+void registerCheck(const std::string& reg, const std::unordered_map<std::string,
                    int>& registers){
   if(reg.empty())
     return;
@@ -58,11 +59,11 @@ int main(int argc, char** argv) {
   int address = 0;
   std::map<std::string, int> symbolTable;
   std::unordered_set<std::string> instructions{"not", "and", "add", "bnz"};
-  std::unordered_map<std::string, int> registers{{"r0", 0}, {"r1", 1}, 
+  std::unordered_map<std::string, int> registers{{"r0", 0}, {"r1", 1},
                                                  {"r2", 2}, {"r3", 3}};
   std::vector<std::string> assembly, hex;
   while(std::getline(file, line)){
-    line = lower(line); // makes assembler case sensitive
+    line = lower(line); // makes assembler case insensitive
     std::stringstream parser(line);
     parser >> word;
     if(word.back() == ':'){ // label definition
@@ -71,12 +72,12 @@ int main(int argc, char** argv) {
       else {
         symbolTable.insert(std::make_pair
         (word.substr(0,word.size() - 1), address));
-        if((parser >> word) && instructions.find(word) != instructions.end()){  
+        if((parser >> word) && instructions.find(word) != instructions.end()){
           assembly.emplace_back(line);
           address++;
         }
       }
-    } else if(instructions.find(word) != instructions.end()){ 
+    } else if(instructions.find(word) != instructions.end()){
       assembly.emplace_back(line);
       address++;
     }
@@ -138,15 +139,15 @@ int main(int argc, char** argv) {
     out << hexCode << std::endl;
     hex.emplace_back(hexCode);
   }
-  std::string argv3 = argv[3];
-  if(argc > 3 and argv3 == "-l"){ // listing output when user adds -l flag
+  if(argc > 3 and strcmp(argv[3], "-l") == 0){ // listing output for -l flag
     std::cout << "*** LABEL LIST ***" << std::endl;
     for(const auto& pair : symbolTable)
-      std::cout << pair.first << "   " << std::setw(2) << std::setfill('0') 
+      std::cout << pair.first << "   " << std::setw(2) << std::setfill('0')
       << pair.second << std::endl;
+    std::cout << std::endl;
     std::cout << "*** MACHINE PROGRAM ***" << std::endl;
     for(int i = 0; i < hex.size(); i++){
-      std::cout << std::setw(2) << std::setfill('0') << i;
+      std::cout << std::setw(2) << std::setfill('0') << std::hex << i;
       std::cout << ":" << hex[i] << "   " << assembly[i] << std::endl;
     }
   }
