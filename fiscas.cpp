@@ -43,17 +43,24 @@ void registerCheck(const std::string& reg, const std::unordered_map<std::string,
                    int>& registers){
   if(reg.empty())
     return;
-  if(registers.find(reg) == registers.end())
+  if(registers.find(reg) == registers.end()){
     std::cout << reg << " is not a valid register." << std::endl;
+    exit(0);
+  }
 }
 
 int main(int argc, char** argv) {
   //PASS 1
   std::ifstream file;
   file.open(argv[1]);
-  if(!file.is_open() or argc < 3) {
-    std::cout << "Usage: fiscas <asm file> <hex file> [-l]" << std::endl;
+  bool noOutputFile;
+  if(!file.is_open()){
+    std::cout << "File did not open" << std::endl;
     exit(0);
+  }
+  if(argc == 2 or (argc == 3 and strcmp(argv[2], "-l") == 0)){
+    std::cout << "Usage: fiscas <asm file> <hex file> [-l]" << std::endl;
+    noOutputFile = true;
   }
   std::string line, word;
   int address = 0;
@@ -67,9 +74,10 @@ int main(int argc, char** argv) {
     std::stringstream parser(line);
     parser >> word;
     if(word.back() == ':'){ // label definition
-      if(symbolTable.find(word) != symbolTable.end()) // label already defined
+      if(symbolTable.find(word) != symbolTable.end()) {
         std::cout <<  "Label " << word << "is already defined." << std::endl;
-      else {
+        exit(0);
+      } else {
         symbolTable.insert(std::make_pair
         (word.substr(0,word.size() - 1), address));
         if((parser >> word) && instructions.find(word) != instructions.end()){
@@ -90,7 +98,10 @@ int main(int argc, char** argv) {
 
   //PASS 2
   std::ofstream out;
-  out.open("fiscas.h");
+  if(noOutputFile)
+    out.open("fiscas.hex");
+  else
+    out.open(argv[2]);
   out << "v2.0 raw" << std::endl;
   int binary = 255;
   std::string Rd, Rm, Rn, target;
@@ -106,8 +117,10 @@ int main(int argc, char** argv) {
       if(symbolTable.find(target) != symbolTable.end()) { // label is defined
         binary = symbolTable[target];
         binary |= (3 << 6);
-      } else
+      } else {
         std::cout << "Label " << target << " is undefined." << std::endl;
+        exit(0);
+      }
       goto end;
     }
     parser >> Rd;
