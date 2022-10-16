@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iostream>
 #include <fstream>
 #include <unordered_map>
 #include <map>
@@ -10,12 +11,6 @@
 std::string lower(std::string str){
   for(char& c : str)
     c = (char)tolower(c);
-  return str;
-}
-
-std::string upper(std::string str){
-  for(char& c : str)
-    c = (char)toupper(c);
   return str;
 }
 
@@ -43,10 +38,8 @@ void registerCheck(const std::string& reg, const std::unordered_map<std::string,
                    int>& registers){
   if(reg.empty())
     return;
-  if(registers.find(reg) == registers.end()){
-    std::cout << reg << " is not a valid register." << std::endl;
-    exit(0);
-  }
+  if(registers.find(reg) == registers.end())
+    throw std::runtime_error(reg + " is not a valid register");
 }
 
 int main(int argc, char** argv) {
@@ -54,10 +47,8 @@ int main(int argc, char** argv) {
   std::ifstream file;
   file.open(argv[1]);
   bool noOutputFile;
-  if(!file.is_open()){
-    std::cout << "File did not open" << std::endl;
-    exit(0);
-  }
+  if(!file.is_open())
+    throw std::runtime_error("File did not open");
   if(argc == 2 or (argc == 3 and strcmp(argv[2], "-l") == 0)){
     std::cout << "Usage: fiscas <asm file> <hex file> [-l]" << std::endl;
     noOutputFile = true;
@@ -88,7 +79,8 @@ int main(int argc, char** argv) {
     } else if(instructions.find(word) != instructions.end()){
       assembly.emplace_back(line);
       address++;
-    }
+    } else if(instructions.find(word) == instructions.end())
+      throw std::runtime_error(word + " is an invalid instruction.");
     if(address >= 64) {
       std::cout << "Assembler is constrained to addresses 0-63, any code after "
                    "won't be processed." << std::endl;
@@ -110,17 +102,13 @@ int main(int argc, char** argv) {
     std::stringstream parser(assembly[i]);
     binary = 255;
     parser >> word;
-    if(instructions.find(word) == instructions.end())
-      std::cout << word << " is an invalid instruction" << std::endl;
     if (word == "bnz") {
       parser >> target;
       if(symbolTable.find(target) != symbolTable.end()) { // label is defined
         binary = symbolTable[target];
         binary |= (3 << 6);
-      } else {
-        std::cout << "Label " << target << " is undefined." << std::endl;
-        exit(0);
-      }
+      } else
+        throw std::runtime_error("Label " + target + " is undefined.");
       goto end;
     }
     parser >> Rd;
@@ -130,6 +118,8 @@ int main(int argc, char** argv) {
     registerCheck(Rn, registers);
     registerCheck(Rm, registers);
     if(word == "add"){
+      if(Rd.empty() or Rn.empty() or Rm.empty())
+        throw std::runtime_error("add requires three registers");
       changeBits(binary, 6, 0);
       changeBits(binary, 4, registers[Rn]);
       changeBits(binary, 2, registers[Rm]);
@@ -147,12 +137,14 @@ int main(int argc, char** argv) {
     }
     end:
     std::ostringstream oss;
-    oss << std::hex << std::setw(2) << std::setfill('0') << binary;
-    std::string hexCode = upper(oss.str());
+    oss << std::hex << std::setw(2) << std::setfill('0') <<
+    std::uppercase << binary;
+    std::string hexCode = oss.str();
     out << hexCode << std::endl;
     hex.emplace_back(hexCode);
   }
-  if(argc > 3 and strcmp(argv[3], "-l") == 0){ // listing output for -l flag
+  if((argc == 3 and strcmp(argv[2], "-l") == 0)
+  or (argc == 4 and strcmp(argv[2], "-l") == 0)){ // listing output for -l flag
     std::cout << "*** LABEL LIST ***" << std::endl;
     for(const auto& pair : symbolTable)
       std::cout << pair.first << "   " << std::setw(2) << std::setfill('0')
@@ -160,7 +152,8 @@ int main(int argc, char** argv) {
     std::cout << std::endl;
     std::cout << "*** MACHINE PROGRAM ***" << std::endl;
     for(int i = 0; i < hex.size(); i++){
-      std::cout << std::setw(2) << std::setfill('0') << std::hex << i;
+      std::cout << std::setw(2) << std::setfill('0') << std::hex <<
+      std::uppercase << i;
       std::cout << ":" << hex[i] << "   " << assembly[i] << std::endl;
     }
   }
