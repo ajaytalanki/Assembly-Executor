@@ -18,16 +18,11 @@ int hexToDecimal(const std::string& hex) {
   return static_cast<int>(sum);
 }
 
-std::string upper(std::string str){
-  for(char& c : str)
-    c = (char)toupper(c);
-  return str;
-}
-
 std::string format(const u_int8_t& num){
   std::ostringstream oss;
-  oss << std::setw(2) << std::setfill('0') << std::hex << (unsigned)num;
-  return upper(oss.str());
+  oss << std::setw(2) << std::setfill('0') << std::hex <<
+  std::uppercase << (unsigned)num;
+  return oss.str();
 }
 
 bool isNumber(const std::string& str){
@@ -84,26 +79,21 @@ int main(int argc, char** argv) {
   bool Z, d, cycles;
   int cycleArg = 0, i = 0, cycle = 0, iBeforeBranch;
   checkCommandLineArguments(argc, argv, d, cycles, cycleArg);
-  std::vector<u_int8_t> IM(64);
+  std::vector<u_int8_t> IM;
   std::vector<u_int8_t> registers(4);
   u_int8_t binary = 0, opCode = 0, Rd = 0, Rm = 0, Rn = 0, target = 0;
   file.open(argv[1]);
-  if(!file.is_open()) {
-    std::cout << "File did not open." << std::endl;
-    exit(0);
-  }
+  if(!file.is_open())
+    throw std::runtime_error("File did not open");
   std::getline(file, line);
   if(line != "v2.0 raw"){
-    std::cout << "File must conform to Logism format. "
-                   "The first line must read v2.0 raw" << std::endl;
-    exit(0);
+    throw std::runtime_error("File must conform to Logism format. "
+                             "The first line must read v2.0 raw");
   }
   while(std::getline(file, line)){
     binary = hexToDecimal(line);
-    IM[i] = binary;
-    i++;
+    IM.emplace_back(binary);
   }
-  i = 0;
   while(i < IM.size()){
     if(cycles){
       if(std::to_string(cycle) == argv[cycleArg])
