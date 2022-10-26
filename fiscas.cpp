@@ -102,7 +102,10 @@ int main(int argc, char** argv) {
     binary = 255;
     parser >> word;
     if (word == "bnz") {
+      target = "";
       parser >> target;
+      if(target.empty())
+        throw std::runtime_error("bnz instruction requires target address");
       if(symbolTable.find(target) != symbolTable.end()) { // label is defined
         binary = symbolTable[target];
         binary |= (3 << 6);
@@ -110,6 +113,9 @@ int main(int argc, char** argv) {
         throw std::runtime_error("Label " + target + " is undefined.");
       goto end;
     }
+    Rd = "";
+    Rn = "";
+    Rm = "";
     parser >> Rd;
     parser >> Rn;
     parser >> Rm;
@@ -117,18 +123,22 @@ int main(int argc, char** argv) {
     registerCheck(Rn, registers);
     registerCheck(Rm, registers);
     if(word == "add"){
-      if(Rd.empty() or Rn.empty() or Rm.empty())
-        throw std::runtime_error("add requires three registers");
+        if(Rd.empty() or Rn.empty() or Rm.empty())
+          throw std::runtime_error("add requires three registers");
       changeBits(binary, 6, 0);
       changeBits(binary, 4, registers[Rn]);
       changeBits(binary, 2, registers[Rm]);
       changeBits(binary, 0, registers[Rd]);
     } else if (word == "and"){
+        if(Rd.empty() or Rn.empty() or Rm.empty())
+          throw std::runtime_error("and requires three registers");
       changeBits(binary, 6, 1);
       changeBits(binary, 4, registers[Rn]);
       changeBits(binary, 2, registers[Rm]);
       changeBits(binary, 0, registers[Rd]);
     } else if (word == "not"){
+        if(!Rm.empty())
+          throw std::runtime_error("not only takes two registers");
       changeBits(binary, 6, 2);
       changeBits(binary, 4, registers[Rn]);
       changeBits(binary, 2, 00);
