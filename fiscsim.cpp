@@ -28,7 +28,7 @@ std::string format(const u_int8_t& num){
 bool isNumber(const std::string& str){
   return str.find_first_not_of("0123456789") == std::string::npos;
 }
-
+// checks to see if d and cycle flags were set and what cycleArg is in cmd line
 void checkCommandLineArguments(int argc, char** argv, bool& d, bool& cycles,
         int& cycleArg){
   if(argc == 3){
@@ -112,7 +112,8 @@ int main(int argc, char** argv) {
       Z = (registers[Rn] & registers[Rm]) == 0;
     } else if(opCode == 2) {
       registers[Rd] = ~registers[Rn];
-      Z = (~registers[Rn]) == 0;
+      if(registers[Rd] == 0)
+        Z = true;
     } else if(opCode == 3){ //BNZ
       if(!Z) {
         target = IM[i] & 0b00111111;
