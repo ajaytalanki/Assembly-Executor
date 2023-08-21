@@ -24,10 +24,11 @@ loop:
 ## Assembler
 The assembler works using a 2-pass system. In the first pass, the assembler initializes and populates a symbol table consisting of labels along with their associated addresses. In the second pass, the assembler converts each instruction into a machine code representation. This is done by assigning each instruction an OP code along with assigning each register a decimal value. By parsing each line of assembly and using bit shifting operations, each instruction is encoded in hex and output to a .h file.
 
-### Assembler Command Line Arguments
+### Assembler Command-Line Arguments
+The assembler requires a .s assembly file as input. It optionally takes in a machine code output file to write to, and writes to "fiscas.hex" if no output file is specified. Lastly, there is an optional "-l" flag which prints out all the labels in the program with their associated addresses. This flag will also print out each assembly instruction with its associated machine code representation.  
 
 ## Simulator
 The simulator takes in the .h file as input. The program parses each line of machine code and uses bit shifting to decide the instruction as well as source and destination registers. The simulator then prints out the status of each register after each instruction as well as the program counter.
 
-### Simulator Command Line Arguments
+### Simulator Command-Line Arguments
 The simulator requires an machine code file as the first argument. The simulator also takes an optional "-d" flag which will print the dissasembly of each line of machine code. Lastly, the simulator takes an optional integer argument that defines the number of CPU cycles to print. By default, the simulator will print 20 CPU cycles. 
