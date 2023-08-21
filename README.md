@@ -8,7 +8,6 @@ The usage of each instruction are as follows:
 ADD R0 R1 R2 => (R0 = R1 + R2)  
 AND R0 R1 R2 (R0 = R1 & R2)  
 NOT R0 R1 (R0 = ~R1)  
-BNZ label  
 
 ## BNZ Usage
 The BNZ instruction is followed by a target address. The program will branch to the specified target address as long as the result of the last operation was not 0. Take a look at the following sample assembly code:  
