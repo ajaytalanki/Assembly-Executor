@@ -33,5 +33,5 @@ The simulator takes in the hex file as input. The program parses each line of ma
 ### Simulator Command-Line Arguments
 The simulator takes in a hex file as the first command-line argument. The simulator also takes an optional "-d" flag which will print the dissasembly of each line of machine code. Lastly, the simulator takes an optional integer argument that defines the number of CPU cycles to print. By default, the simulator will print 20 CPU cycles. 
 
-### Demo
+## Demo
 A working demo of this project can be found on my [portfolio](https://ajaytalanki.github.io/portfolio/)
